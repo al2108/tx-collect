@@ -3,7 +3,7 @@ import {TxCollect} from './tx-collect'
 export class Tx2 {
   @TxCollect.forTranslation
   public static readonly tx = {
-    compTwo: {
+    comp2: {
       workflow: {
         name: '',
         step1: {

@@ -1,9 +1,9 @@
 import {TxCollect} from './tx-collect'
 
-export class Tx1 {
+export class Tx3 {
   @TxCollect.forTranslation
   public static readonly tx = {
-    comp1: {
+    comp3: {
       workflow: {
         name: '',
         step1: {
@@ -13,6 +13,9 @@ export class Tx1 {
         step2: {
           country: '',
           street: ''
+        },
+        step3: {
+          saveButton: ''
         }
       }
     }

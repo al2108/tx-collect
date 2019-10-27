@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 export class Translator {
   private translations = {
-    compOne: {
+    comp1: {
       workflow: {
         name: 'Translated worklow name',
         step1: {

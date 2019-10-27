@@ -1,23 +1,40 @@
 import _ from 'lodash';
 
 export class TxCollect {
-  public static tx = {};
+  private static txObjects = [];
+  private static tx;
+  private static collectionOrder: string = '';
 
   public static forTranslation(target: Object, propertyName: string) {
-    // console.log(target, propertyName);
-    // const paths = txCollect.modify(target[propertyName], '');
-    // console.log(paths);
-    TxCollect.modify(target[propertyName]);
-    console.log(target[propertyName]);
-    TxCollect.tx = {...TxCollect.tx, ...target[propertyName]};
-    console.log(TxCollect.tx);
+    const txObject = target[propertyName];
+    const firstKey = _.keys(txObject)[0];
+
+    TxCollect.collectionOrder += TxCollect.collectionOrder ? ', ' : '';
+    TxCollect.collectionOrder += firstKey; 
+    console.log(TxCollect.collectionOrder);
+
+    TxCollect.modify(txObject);
+    TxCollect.txObjects.push(target[propertyName]);
+    TxCollect.txObjects = TxCollect.txObjects.sort((el1, el2) => {
+      if (!el1 && !el2) {
+        return 0;
+      }
+      if (!el1) {
+        return -1;
+      }
+      if (!el2) {
+        return 1;
+      }
+      let key1: string = _.keys(el1)[0];
+      let key2: string = _.keys(el2)[0];
+      return key1.localeCompare(key2);
+    });
+    TxCollect.tx = {};
+    TxCollect.txObjects.forEach(txObject => TxCollect.tx = {...TxCollect.tx, ...txObject});
   }
 
   public static modify(obj: Object, parentKey: string = '') {
-    // console.log('modify2:', obj, parentKey);
-    // console.log(_.keys(obj));
     for (let key of _.keys(obj)) {
-      // console.log('modify2-key:', key);
       if (_.isPlainObject(obj[key])) {
         TxCollect.modify(obj[key], parentKey === '' ? key : parentKey + '.' + key);
       } else if (typeof obj[key] === "string") {
@@ -40,6 +57,10 @@ export class TxCollect {
       .replace(/;,/g, ';').replace(/( +)"/g, '$1').replace(/":/g, ':')
       .replace(/} *,/g, '}').replace(/} *;/g, '}');
     return translationStructure;
+  }
+
+  public getCollectionOrder(): string {
+    return TxCollect.collectionOrder;
   }
 
 }
