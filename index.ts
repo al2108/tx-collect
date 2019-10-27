@@ -2,16 +2,51 @@
 import './style.css';
 import _ from 'lodash';
 
+class TxCollect {
+  public static tx = {};
 
+  public static forTranslation(target: Object, propertyName: string) {
+    // console.log(target, propertyName);
+    // const paths = txCollect.modify(target[propertyName], '');
+    // console.log(paths);
+    TxCollect.modify(target[propertyName]);
+    console.log(target[propertyName]);
+    TxCollect.tx = {...TxCollect.tx, ...target[propertyName]};
+    console.log(TxCollect.tx);
+  }
 
+  public static modify(obj: Object, parentKey: string = '') {
+    // console.log('modify2:', obj, parentKey);
+    // console.log(_.keys(obj));
+    for (let key of _.keys(obj)) {
+      // console.log('modify2-key:', key);
+      if (_.isPlainObject(obj[key])) {
+        TxCollect.modify(obj[key], parentKey === '' ? key : parentKey + '.' + key);
+      } else if (typeof obj[key] === "string") {
+        obj[key] = parentKey + '.' + key;
+      }
+    }
+  } 
 
-interface TxObject {
-  [key: string]: any;
+  public exportTranslationNames(): string {
+    let translationNames = 'export const translationNames: TranslationStructure = ';
+    translationNames += JSON.stringify(TxCollect.tx, null, 2);
+    translationNames = translationNames.replace(/^( *)"/gm, '$1').replace(/" *:/g, ':');
+    return translationNames + ';';
+  }
+
+  public exportTranslationStructure(): string {
+    let translationStructure = 'export interface TranslationStructure ';
+    translationStructure += JSON.stringify(TxCollect.tx, null, 2) + ';';
+    translationStructure = translationStructure.replace(/: ".*"/g, ': string;')
+      .replace(/;,/g, ';').replace(/( +)"/g, '$1').replace(/":/g, ':')
+      .replace(/} *,/g, '}').replace(/} *;/g, '}');
+    return translationStructure;
+  }
+
 }
 
-type TxObjectList = Array<TxObject>;
-
-class txCollect {
+class Translator {
   private translations = {
     compOne: {
       workflow: {
@@ -27,66 +62,26 @@ class txCollect {
       }
     }
   }
-  public static tx = {};
-
-  public static forTranslation(target: Object, propertyName: string) {
-    // console.log(target, propertyName);
-    // const paths = txCollect.modify(target[propertyName], '');
-    // console.log(paths);
-    txCollect.modify2(target[propertyName]);
-    console.log(target[propertyName]);
-    txCollect.tx = {...txCollect.tx, ...target[propertyName]};
-    // console.log(txCollect.tx);
-  }
-
-  public static modify(obj: Object, parentKey: string) {
-    // console.log(Object.getOwnPropertyNames(obj));
-    let result;
-    if (_.isPlainObject(obj)) {
-      result = _.flatMap(_.keys(obj), (key) => {
-          return _.map(this.modify(obj[key], key), (subkey) => {
-              return (parentKey ? parentKey + '.' : '') + subkey;
-          });
-      });
-    }
-    else {
-      result = [];
-    }
-    return _.concat(result, parentKey || []);
-  }
-
-  public static modify2(obj: Object, parentKey: string = '') {
-    // console.log('modify2:', obj, parentKey);
-    // console.log(_.keys(obj));
-    for (let key of _.keys(obj)) {
-      // console.log('modify2-key:', key);
-      if (_.isPlainObject(obj[key])) {
-        txCollect.modify2(obj[key], parentKey === '' ? key : parentKey + '.' + key);
-      } else if (typeof obj[key] === "string") {
-        obj[key] = parentKey + '.' + key;
-      }
-    }
-  } 
-
   public translate(path: string): string {
     return _.get(this.translations, path);
   }
+
 }
 
 
 export class tx1 {
-  @txCollect.forTranslation
-  public static readonly tx: TxObject = {
+  @TxCollect.forTranslation
+  public static readonly tx = {
     compOne: {
       workflow: {
-        name: 'compOne.workflow.name',
+        name: '',
         step1: {
-          fistName: 'First Name',
-          lastName: 'Last Name'
+          fistName: '',
+          lastName: ''
         },
         step2: {
-          country: 'Country',
-          street: 'Street'
+          country: '',
+          street: ''
         }
       }
     }
@@ -94,28 +89,29 @@ export class tx1 {
 }
 
 export class tx2 {
-  @txCollect.forTranslation
-  public static readonly tx: TxObject = {
+  @TxCollect.forTranslation
+  public static readonly tx = {
     compTwo: {
       workflow: {
-        name: 'Workflow-2',
+        name: '',
         step1: {
-          fistName: 'First Name',
-          lastName: 'Last Name'
+          fistName: '',
+          lastName: ''
         },
         step2: {
-          country: 'Country',
-          street: 'Street'
+          country: '',
+          street: ''
         },
         step3: {
-          saveButton: 'Save'
+          saveButton: ''
         }
       }
     }
   }
 }
 
-const tx = new txCollect();
+const txCollect = new TxCollect();
+const translator = new Translator();
 // Write TypeScript code!
 const appDiv: HTMLElement = document.getElementById('app');
 appDiv.innerHTML = `<h1>TypeScript Starter</h1>`;
@@ -123,4 +119,74 @@ appDiv.innerHTML = `<h1>TypeScript Starter</h1>`;
 const nameDiv: HTMLElement = document.getElementById('name');
 nameDiv.innerHTML = 
 `<p>Name: ${tx1.tx.compOne.workflow.name}</p>
-<p>Name-2: ${tx.translate(tx1.tx.compOne.workflow.name)}</p>`;
+<p>Name-2: ${translator.translate(tx1.tx.compOne.workflow.name)}</p>`;
+
+const jsonInterface: HTMLElement = document.getElementById('json-interface');
+jsonInterface.innerHTML = txCollect.exportTranslationStructure();
+
+const jsonNames: HTMLElement = document.getElementById('json-names');
+jsonNames.innerHTML = txCollect.exportTranslationNames();
+
+export interface TranslationStructure {
+  compOne: {
+    workflow: {
+      name: string;
+      step1: {
+        fistName: string;
+        lastName: string;
+      }
+      step2: {
+        country: string;
+        street: string;
+      }
+    }
+  }
+  compTwo: {
+    workflow: {
+      name: string;
+      step1: {
+        fistName: string;
+        lastName: string;
+      }
+      step2: {
+        country: string;
+        street: string;
+      }
+      step3: {
+        saveButton: string;
+      }
+    }
+  }
+}
+
+export const translationNames: TranslationStructure = {
+  compOne: {
+    workflow: {
+      name: "compOne.workflow.name",
+      step1: {
+        fistName: "compOne.workflow.step1.fistName",
+        lastName: "compOne.workflow.step1.lastName"
+      },
+      step2: {
+        country: "compOne.workflow.step2.country",
+        street: "compOne.workflow.step2.street"
+      }
+    }
+  },
+  compTwo: {
+    workflow: {
+      name: "compTwo.workflow.name",
+      step1: {
+        fistName: "compTwo.workflow.step1.fistName",
+        lastName: "compTwo.workflow.step1.lastName"
+      },
+      step2: {
+        country: "compTwo.workflow.step2.country",
+        street: "compTwo.workflow.step2.street"
+      },
+      step3: {
+        saveButton: "compTwo.workflow.step3.saveButton"
+      }
+    }
+  }
+};
